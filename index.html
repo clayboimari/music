@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Meta" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>Meta</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      background: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      max-width: 430px;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .status-bar {
+      padding: calc(var(--safe-top) + 10px) 24px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: #111;
+      flex-shrink: 0;
+    }
+
+    .status-icons { display: flex; gap: 6px; align-items: center; }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 24px 12px;
+      flex-shrink: 0;
+    }
+
+    .top-bar-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #999;
+      font-weight: 500;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #111;
+      border-radius: 50%;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .separator { height: 0.5px; background: #e8e8e8; margin: 0 24px; flex-shrink: 0; }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 24px 0;
+      overflow: hidden;
+    }
+
+    .album-wrap {
+      position: relative;
+      width: min(260px, 65vw);
+      height: min(260px, 65vw);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .album-cover {
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+      background: #111;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease;
+    }
+
+    .album-wrap:active .album-cover { transform: scale(0.97); }
+
+    .album-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 70%, #533483 100%);
+    }
+
+    .album-texture {
+      position: absolute;
+      inset: 0;
+      opacity: 0.06;
+      background-image:
+        repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 8px),
+        repeating-linear-gradient(90deg, #fff 0px, #fff 1px, transparent 1px, transparent 8px);
+    }
+
+    .album-inner-ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .album-center-dot {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .song-info {
+      width: 100%;
+      margin-top: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .song-title {
+      font-size: 20px;
+      font-weight: 500;
+      color: #111;
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+    }
+
+    .song-artist {
+      font-size: 14px;
+      color: #888;
+      margin-top: 3px;
+    }
+
+    .heart-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #ccc;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .heart-btn.liked { color: #111; }
+
+    .action-pills {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      width: 100%;
+    }
+
+    .pill {
+      flex: 1;
+      height: 32px;
+      border-radius: 100px;
+      border: 0.5px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 11px;
+      color: #555;
+      cursor: pointer;
+      background: #fff;
+      transition: background 0.15s;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .pill.active { background: #111; color: #fff; border-color: #111; }
+    .pill i { font-size: 13px; }
+
+    .progress-section { width: 100%; margin-top: 20px; }
+
+    .progress-track {
+      width: 100%;
+      height: 2px;
+      background: #e8e8e8;
+      border-radius: 2px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #111;
+      border-radius: 2px;
+      width: 38%;
+      position: relative;
+    }
+
+    .progress-thumb {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #111;
+      position: absolute;
+      right: -5px; top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 7px;
+    }
+
+    .time-label {
+      font-size: 11px;
+      color: #bbb;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 20px;
+      padding: 0 4px;
+    }
+
+    .ctrl-btn {
+      width: 44px; height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #bbb;
+      border-radius: 50%;
+      transition: color 0.15s;
+    }
+
+    .ctrl-btn.active { color: #111; }
+
+    .play-btn {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+
+    .play-btn:active { transform: scale(0.95); }
+
+    .volume-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      margin-top: 18px;
+    }
+
+    .volume-icon { color: #ccc; font-size: 16px; }
+
+    .volume-track {
+      flex: 1;
+      height: 2px;
+      background: #e8e8e8;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    .volume-fill {
+      height: 100%;
+      background: #ccc;
+      border-radius: 2px;
+      width: 70%;
+    }
+
+    .bottom-separator { height: 0.5px; background: #e8e8e8; margin: 16px 24px 0; flex-shrink: 0; }
+
+    .bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 8px calc(var(--safe-bottom) + 12px);
+      flex-shrink: 0;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      color: #ccc;
+      padding: 4px 12px;
+      border-radius: 8px;
+      transition: color 0.15s;
+    }
+
+    .nav-item.active { color: #111; }
+    .nav-item span { font-size: 10px; font-weight: 500; }
+    .nav-item i { font-size: 20px; }
+
+    .credits-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.97);
+      padding: calc(var(--safe-top) + 60px) 28px 28px;
+      display: none;
+      flex-direction: column;
+      z-index: 10;
+    }
+
+    .credits-overlay.visible { display: flex; }
+
+    .credits-close {
+      position: absolute;
+      top: calc(var(--safe-top) + 20px);
+      right: 24px;
+      cursor: pointer;
+      color: #888;
+      font-size: 20px;
+    }
+
+    .credits-title {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #999;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+
+    .credit-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 0.5px solid #f0f0f0;
+    }
+
+    .credit-role { font-size: 12px; color: #aaa; }
+    .credit-name { font-size: 13px; color: #111; font-weight: 500; }
+
+    .lyrics-panel {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: #fff;
+      border-top: 0.5px solid #e8e8e8;
+      padding: 16px 24px calc(var(--safe-bottom) + 16px);
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      z-index: 5;
+      max-height: 55%;
+      overflow-y: auto;
+    }
+
+    .lyrics-panel.visible { transform: translateY(0); }
+
+    .lyrics-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .lyrics-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #999;
+      font-weight: 500;
+    }
+
+    .lyric-line { font-size: 15px; color: #111; line-height: 2.2; }
+    .lyric-line.active { font-weight: 500; }
+    .lyric-line.past { color: #ccc; }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+
+    <div class="status-bar">
+      <span id="clockDisplay">9:41</span>
+      <div class="status-icons">
+        <i class="ti ti-wifi" style="font-size:13px"></i>
+        <i class="ti ti-battery" style="font-size:13px"></i>
+      </div>
+    </div>
+
+    <div class="top-bar">
+      <div class="icon-btn">
+        <i class="ti ti-chevron-left" style="font-size:20px"></i>
+      </div>
+      <span class="top-bar-label">Now Playing</span>
+      <div class="icon-btn">
+        <i class="ti ti-dots" style="font-size:18px"></i>
+      </div>
+    </div>
+
+    <div class="separator"></div>
+
+    <div class="main-content">
+
+      <div class="album-wrap" id="albumWrap">
+        <div class="album-cover">
+          <div class="album-gradient"></div>
+          <div class="album-texture"></div>
+          <div class="album-inner-ring"></div>
+          <div class="album-center-dot"></div>
+        </div>
+      </div>
+
+      <div class="song-info">
+        <div>
+          <div class="song-title">Resurgence</div>
+          <div class="song-artist">KMRU & Aho Ssan</div>
+        </div>
+        <div class="heart-btn" id="heartBtn">
+          <i class="ti ti-heart" style="font-size:20px" id="heartIcon"></i>
+        </div>
+      </div>
+
+      <div class="action-pills">
+        <div class="pill" id="lyricsPill" onclick="toggleLyrics()">
+          <i class="ti ti-align-left"></i> Lyrics
+        </div>
+        <div class="pill" id="geniusPill">
+          <i class="ti ti-bulb"></i> Genius
+        </div>
+        <div class="pill" id="scPill">
+          <i class="ti ti-messages"></i> Comments
+        </div>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-track" id="progressTrack">
+          <div class="progress-fill" id="progressFill">
+            <div class="progress-thumb"></div>
+          </div>
+        </div>
+        <div class="time-row">
+          <span class="time-label" id="currentTime">1:47</span>
+          <span class="time-label">4:38</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="ctrl-btn" id="shuffleBtn" onclick="toggleShuffle()">
+          <i class="ti ti-arrows-shuffle" style="font-size:18px"></i>
+        </div>
+        <div class="ctrl-btn" onclick="prevTrack()">
+          <i class="ti ti-player-skip-back-filled" style="font-size:22px"></i>
+        </div>
+        <div class="play-btn" id="playBtn" onclick="togglePlay()">
+          <i class="ti ti-player-play-filled" style="font-size:26px" id="playIcon"></i>
+        </div>
+        <div class="ctrl-btn" onclick="nextTrack()">
+          <i class="ti ti-player-skip-forward-filled" style="font-size:22px"></i>
+        </div>
+        <div class="ctrl-btn" id="repeatBtn" onclick="toggleRepeat()">
+          <i class="ti ti-repeat" style="font-size:18px"></i>
+        </div>
+      </div>
+
+      <div class="volume-section">
+        <i class="ti ti-volume-3 volume-icon"></i>
+        <div class="volume-track" id="volumeTrack">
+          <div class="volume-fill" id="volumeFill"></div>
+        </div>
+        <i class="ti ti-volume volume-icon"></i>
+      </div>
+
+    </div>
+
+    <div class="bottom-separator"></div>
+
+    <nav class="bottom-nav">
+      <div class="nav-item"><i class="ti ti-list"></i><span>Queue</span></div>
+      <div class="nav-item active"><i class="ti ti-disc"></i><span>Now</span></div>
+      <div class="nav-item"><i class="ti ti-search"></i><span>Search</span></div>
+      <div class="nav-item"><i class="ti ti-library"></i><span>Library</span></div>
+    </nav>
+
+    <div class="credits-overlay" id="creditsOverlay">
+      <div class="credits-close" onclick="closeCredits()">
+        <i class="ti ti-x"></i>
+      </div>
+      <div class="credits-title">Credits</div>
+      <div class="credit-row"><span class="credit-role">Artist</span><span class="credit-name">KMRU</span></div>
+      <div class="credit-row"><span class="credit-role">Artist</span><span class="credit-name">Aho Ssan</span></div>
+      <div class="credit-row"><span class="credit-role">Label</span><span class="credit-name">Subtext Recordings</span></div>
+      <div class="credit-row"><span class="credit-role">Released</span><span class="credit-name">2022</span></div>
+      <div class="credit-row"><span class="credit-role">Genre</span><span class="credit-name">Electroacoustic</span></div>
+      <div class="credit-row"><span class="credit-role">Source</span><span class="credit-name">Genius · MusicBrainz</span></div>
+    </div>
+
+    <div class="lyrics-panel" id="lyricsPanel">
+      <div class="lyrics-header">
+        <span class="lyrics-label">Lyrics</span>
+        <div class="icon-btn" onclick="toggleLyrics()" style="width:24px;height:24px">
+          <i class="ti ti-chevron-down" style="font-size:16px"></i>
+        </div>
+      </div>
+      <div class="lyric-line past">Drifting through the static field</div>
+      <div class="lyric-line past">No border left to feel</div>
+      <div class="lyric-line active">Something resurging from below</div>
+      <div class="lyric-line">A signal lost, a signal found</div>
+      <div class="lyric-line">The silence is a different sound</div>
+      <div class="lyric-line">Emergence at the edge of form</div>
+    </div>
+
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+
+    let playing = false, liked = false, shuffleOn = false, repeatOn = false;
+    let lyricsOpen = false, holdTimer = null, progressInterval = null;
+    let progressPct = 38, volumePct = 70;
+    const totalSecs = 278;
+
+    function updateClock() {
+      const now = new Date();
+      const h = now.getHours() % 12 || 12;
+      const m = now.getMinutes().toString().padStart(2, '0');
+      document.getElementById('clockDisplay').textContent = h + ':' + m;
+    }
+    updateClock();
+    setInterval(updateClock, 10000);
+
+    function togglePlay() {
+      playing = !playing;
+      document.getElementById('playIcon').className =
+        playing ? 'ti ti-player-pause-filled' : 'ti ti-player-play-filled';
+      if (playing) {
+        progressInterval = setInterval(() => {
+          progressPct = Math.min(progressPct + 0.05, 100);
+          updateProgress();
+        }, 100);
+      } else {
+        clearInterval(progressInterval);
+      }
+    }
+
+    function updateProgress() {
+      document.getElementById('progressFill').style.width = progressPct + '%';
+      const current = Math.round((progressPct / 100) * totalSecs);
+      const m = Math.floor(current / 60);
+      const s = current % 60;
+      document.getElementById('currentTime').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function toggleLike() {
+      liked = !liked;
+      document.getElementById('heartBtn').className = liked ? 'heart-btn liked' : 'heart-btn';
+      document.getElementById('heartIcon').className = liked ? 'ti ti-heart-filled' : 'ti ti-heart';
+    }
+
+    function toggleShuffle() {
+      shuffleOn = !shuffleOn;
+      document.getElementById('shuffleBtn').className = shuffleOn ? 'ctrl-btn active' : 'ctrl-btn';
+    }
+
+    function toggleRepeat() {
+      repeatOn = !repeatOn;
+      document.getElementById('repeatBtn').className = repeatOn ? 'ctrl-btn active' : 'ctrl-btn';
+    }
+
+    function toggleLyrics() {
+      lyricsOpen = !lyricsOpen;
+      document.getElementById('lyricsPanel').className = lyricsOpen ? 'lyrics-panel visible' : 'lyrics-panel';
+      document.getElementById('lyricsPill').className = lyricsOpen ? 'pill active' : 'pill';
+    }
+
+    function prevTrack() { progressPct = 0; updateProgress(); }
+    function nextTrack() { progressPct = 0; updateProgress(); }
+
+    function closeCredits() {
+      document.getElementById('creditsOverlay').className = 'credits-overlay';
+    }
+
+    document.getElementById('heartBtn').addEventListener('click', toggleLike);
+
+    const albumWrap = document.getElementById('albumWrap');
+    albumWrap.addEventListener('touchstart', () => {
+      holdTimer = setTimeout(() => {
+        document.getElementById('creditsOverlay').className = 'credits-overlay visible';
+      }, 600);
+    });
+    albumWrap.addEventListener('touchend', () => clearTimeout(holdTimer));
+    albumWrap.addEventListener('touchmove', () => clearTimeout(holdTimer));
+
+    document.getElementById('progressTrack').addEventListener('click', e => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      progressPct = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+      updateProgress();
+    });
+
+    document.getElementById('volumeTrack').addEventListener('click', e => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      volumePct = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+      document.getElementById('volumeFill').style.width = volumePct + '%';
+    });
+  </script>
+</body>
+</html>
