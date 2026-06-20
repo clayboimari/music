@@ -2,7 +2,7 @@
   "name": "Meta",
   "short_name": "Meta",
   "description": "Your universal music player",
-  "start_url": "/",
+  "start_url": "/music/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
