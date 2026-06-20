@@ -51,12 +51,34 @@
       overflow: hidden;
     }
 
+    /* Upload prompt — shown when no track loaded */
+    .upload-prompt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+    }
+
+    .upload-prompt i {
+      font-size: 48px;
+      color: #ddd;
+    }
+
+    .upload-prompt span {
+      font-size: 13px;
+      color: #bbb;
+      letter-spacing: 0.04em;
+    }
+
+    /* Album art */
     .album-wrap {
       position: relative;
       width: min(280px, 72vw);
       height: min(280px, 72vw);
       cursor: pointer;
       flex-shrink: 0;
+      display: none;
     }
 
     .album-cover {
@@ -69,7 +91,14 @@
       transition: transform 0.2s ease;
     }
 
-    .album-wrap:active .album-cover { transform: scale(0.97); }
+    .album-art-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
 
     .album-gradient {
       position: absolute;
@@ -104,12 +133,16 @@
       background: rgba(255,255,255,0.2);
     }
 
+    .album-wrap:active .album-cover { transform: scale(0.97); }
+
+    /* Song info */
     .song-info {
       width: 100%;
       margin-top: 32px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      display: none;
     }
 
     .song-title {
@@ -140,7 +173,12 @@
 
     .heart-btn.liked { color: #111; }
 
-    .progress-section { width: 100%; margin-top: 28px; }
+    /* Progress */
+    .progress-section {
+      width: 100%;
+      margin-top: 28px;
+      display: none;
+    }
 
     .progress-track {
       width: 100%;
@@ -157,6 +195,7 @@
       border-radius: 2px;
       width: 0%;
       position: relative;
+      pointer-events: none;
     }
 
     .progress-thumb {
@@ -180,6 +219,7 @@
       font-variant-numeric: tabular-nums;
     }
 
+    /* Controls */
     .controls {
       display: flex;
       align-items: center;
@@ -187,6 +227,7 @@
       width: 100%;
       margin-top: 28px;
       padding: 0 4px;
+      display: none;
     }
 
     .ctrl-btn {
@@ -217,6 +258,7 @@
 
     .play-btn:active { transform: scale(0.95); }
 
+    /* Bottom */
     .separator { height: 0.5px; background: #e8e8e8; margin: 0 24px; flex-shrink: 0; }
 
     .bottom-nav {
@@ -242,6 +284,7 @@
     .nav-item span { font-size: 10px; font-weight: 500; }
     .nav-item i { font-size: 20px; }
 
+    /* Credits overlay */
     .credits-overlay {
       position: absolute;
       inset: 0;
@@ -281,6 +324,9 @@
 
     .credit-role { font-size: 12px; color: #aaa; }
     .credit-name { font-size: 13px; color: #111; font-weight: 500; }
+
+    /* Hidden file input */
+    #fileInput { display: none; }
   </style>
 </head>
 <body>
@@ -288,26 +334,39 @@
 
     <div class="main-content">
 
+      <!-- Upload prompt (shown before any file loaded) -->
+      <div class="upload-prompt" id="uploadPrompt" onclick="document.getElementById('fileInput').click()">
+        <i class="ti ti-music"></i>
+        <span>Tap to load a track</span>
+      </div>
+
+      <!-- Hidden file input -->
+      <input type="file" id="fileInput" accept="audio/*" />
+
+      <!-- Album art (shown after load) -->
       <div class="album-wrap" id="albumWrap">
         <div class="album-cover">
-          <div class="album-gradient"></div>
+          <img class="album-art-img" id="albumArtImg" />
+          <div class="album-gradient" id="albumGradient"></div>
           <div class="album-texture"></div>
           <div class="album-inner-ring"></div>
           <div class="album-center-dot"></div>
         </div>
       </div>
 
-      <div class="song-info">
+      <!-- Song info -->
+      <div class="song-info" id="songInfo">
         <div>
-          <div class="song-title">Song Title</div>
-          <div class="song-artist">Artist</div>
+          <div class="song-title" id="songTitle">Song Title</div>
+          <div class="song-artist" id="songArtist">Artist</div>
         </div>
         <div class="heart-btn" id="heartBtn">
           <i class="ti ti-heart" style="font-size:20px" id="heartIcon"></i>
         </div>
       </div>
 
-      <div class="progress-section">
+      <!-- Progress bar -->
+      <div class="progress-section" id="progressSection">
         <div class="progress-track" id="progressTrack">
           <div class="progress-fill" id="progressFill">
             <div class="progress-thumb"></div>
@@ -319,7 +378,8 @@
         </div>
       </div>
 
-      <div class="controls">
+      <!-- Playback controls -->
+      <div class="controls" id="controls">
         <div class="ctrl-btn" id="shuffleBtn" onclick="toggleShuffle()">
           <i class="ti ti-arrows-shuffle" style="font-size:18px"></i>
         </div>
@@ -344,54 +404,157 @@
     <nav class="bottom-nav">
       <div class="nav-item"><i class="ti ti-list"></i><span>Queue</span></div>
       <div class="nav-item active"><i class="ti ti-disc"></i><span>Now</span></div>
-      <div class="nav-item"><i class="ti ti-search"></i><span>Search</span></div>
       <div class="nav-item"><i class="ti ti-library"></i><span>Library</span></div>
+      <div class="nav-item" onclick="document.getElementById('fileInput').click()">
+        <i class="ti ti-plus"></i><span>Add</span>
+      </div>
     </nav>
 
+    <!-- Credits overlay -->
     <div class="credits-overlay" id="creditsOverlay">
       <div class="credits-close" onclick="closeCredits()">
         <i class="ti ti-x"></i>
       </div>
       <div class="credits-title">Credits</div>
-      <div class="credit-row"><span class="credit-role">Artist</span><span class="credit-name">—</span></div>
-      <div class="credit-row"><span class="credit-role">Label</span><span class="credit-name">—</span></div>
-      <div class="credit-row"><span class="credit-role">Released</span><span class="credit-name">—</span></div>
+      <div class="credit-row"><span class="credit-role">Title</span><span class="credit-name" id="cTitle">—</span></div>
+      <div class="credit-row"><span class="credit-role">Artist</span><span class="credit-name" id="cArtist">—</span></div>
+      <div class="credit-row"><span class="credit-role">Album</span><span class="credit-name" id="cAlbum">—</span></div>
+      <div class="credit-row"><span class="credit-role">File</span><span class="credit-name" id="cFile">—</span></div>
     </div>
 
   </div>
+
+  <!-- jsmediatags for reading ID3 tags from audio files -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
     }
 
-    let playing = false, liked = false, shuffleOn = false, repeatOn = false;
-    let holdTimer = null, progressInterval = null;
-    let progressPct = 0;
+    const audio = new Audio();
+    let liked = false, shuffleOn = false, repeatOn = false, holdTimer = null;
 
+    // Show player UI
+    function showPlayer() {
+      document.getElementById('uploadPrompt').style.display = 'none';
+      document.getElementById('albumWrap').style.display = 'block';
+      document.getElementById('songInfo').style.display = 'flex';
+      document.getElementById('progressSection').style.display = 'block';
+      document.getElementById('controls').style.display = 'flex';
+    }
+
+    // Format seconds to m:ss
+    function fmt(s) {
+      if (!s || isNaN(s)) return '0:00';
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return m + ':' + (sec < 10 ? '0' : '') + sec;
+    }
+
+    // File input handler
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Load audio
+      const url = URL.createObjectURL(file);
+      audio.src = url;
+      audio.load();
+
+      // Set fallback name from filename
+      const bare = file.name.replace(/\.[^.]+$/, '');
+      document.getElementById('songTitle').textContent = bare;
+      document.getElementById('songArtist').textContent = '—';
+      document.getElementById('cFile').textContent = file.name;
+      document.getElementById('cTitle').textContent = bare;
+      document.getElementById('cArtist').textContent = '—';
+      document.getElementById('cAlbum').textContent = '—';
+
+      // Reset album art to gradient
+      document.getElementById('albumArtImg').style.display = 'none';
+      document.getElementById('albumGradient').style.display = 'block';
+
+      showPlayer();
+      audio.play().then(() => {
+        document.getElementById('playIcon').className = 'ti ti-player-pause-filled';
+      }).catch(() => {});
+
+      // Read ID3 tags
+      window.jsmediatags.read(file, {
+        onSuccess: function(tag) {
+          const t = tag.tags;
+          if (t.title) {
+            document.getElementById('songTitle').textContent = t.title;
+            document.getElementById('cTitle').textContent = t.title;
+          }
+          if (t.artist) {
+            document.getElementById('songArtist').textContent = t.artist;
+            document.getElementById('cArtist').textContent = t.artist;
+          }
+          if (t.album) {
+            document.getElementById('cAlbum').textContent = t.album;
+          }
+          // Album art from ID3
+          if (t.picture) {
+            const pic = t.picture;
+            const base64 = pic.data.reduce((s, b) => s + String.fromCharCode(b), '');
+            const src = 'data:' + pic.format + ';base64,' + btoa(base64);
+            const img = document.getElementById('albumArtImg');
+            img.src = src;
+            img.style.display = 'block';
+            document.getElementById('albumGradient').style.display = 'none';
+          }
+        },
+        onError: function() {}
+      });
+
+      // Reset file input so same file can be reloaded
+      this.value = '';
+    });
+
+    // Play / pause
     function togglePlay() {
-      playing = !playing;
-      document.getElementById('playIcon').className =
-        playing ? 'ti ti-player-pause-filled' : 'ti ti-player-play-filled';
-      if (playing) {
-        progressInterval = setInterval(() => {
-          progressPct = Math.min(progressPct + 0.05, 100);
-          updateProgress();
-        }, 100);
+      if (!audio.src) return;
+      if (audio.paused) {
+        audio.play();
+        document.getElementById('playIcon').className = 'ti ti-player-pause-filled';
       } else {
-        clearInterval(progressInterval);
+        audio.pause();
+        document.getElementById('playIcon').className = 'ti ti-player-play-filled';
       }
     }
 
-    function updateProgress() {
-      document.getElementById('progressFill').style.width = progressPct + '%';
-    }
+    // Progress bar — update from audio
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration) return;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('currentTime').textContent = fmt(audio.currentTime);
+    });
 
-    function toggleLike() {
-      liked = !liked;
-      document.getElementById('heartBtn').className = liked ? 'heart-btn liked' : 'heart-btn';
-      document.getElementById('heartIcon').className = liked ? 'ti ti-heart-filled' : 'ti ti-heart';
-    }
+    audio.addEventListener('loadedmetadata', () => {
+      document.getElementById('totalTime').textContent = fmt(audio.duration);
+    });
+
+    audio.addEventListener('ended', () => {
+      document.getElementById('playIcon').className = 'ti ti-player-play-filled';
+      document.getElementById('progressFill').style.width = '0%';
+      document.getElementById('currentTime').textContent = '0:00';
+      if (repeatOn) {
+        audio.currentTime = 0;
+        audio.play();
+        document.getElementById('playIcon').className = 'ti ti-player-pause-filled';
+      }
+    });
+
+    // Seek on progress bar tap
+    document.getElementById('progressTrack').addEventListener('click', e => {
+      if (!audio.duration) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pct = (e.clientX - rect.left) / rect.width;
+      audio.currentTime = pct * audio.duration;
+    });
 
     function toggleShuffle() {
       shuffleOn = !shuffleOn;
@@ -403,15 +566,27 @@
       document.getElementById('repeatBtn').className = repeatOn ? 'ctrl-btn active' : 'ctrl-btn';
     }
 
-    function prevTrack() { progressPct = 0; updateProgress(); }
-    function nextTrack() { progressPct = 0; updateProgress(); }
+    function prevTrack() {
+      if (audio.currentTime > 3) {
+        audio.currentTime = 0;
+      }
+    }
+
+    function nextTrack() {}
+
+    function toggleLike() {
+      liked = !liked;
+      document.getElementById('heartBtn').className = liked ? 'heart-btn liked' : 'heart-btn';
+      document.getElementById('heartIcon').className = liked ? 'ti ti-heart-filled' : 'ti ti-heart';
+    }
+
+    document.getElementById('heartBtn').addEventListener('click', toggleLike);
 
     function closeCredits() {
       document.getElementById('creditsOverlay').className = 'credits-overlay';
     }
 
-    document.getElementById('heartBtn').addEventListener('click', toggleLike);
-
+    // Hold album cover for credits
     const albumWrap = document.getElementById('albumWrap');
     albumWrap.addEventListener('touchstart', () => {
       holdTimer = setTimeout(() => {
@@ -420,12 +595,6 @@
     });
     albumWrap.addEventListener('touchend', () => clearTimeout(holdTimer));
     albumWrap.addEventListener('touchmove', () => clearTimeout(holdTimer));
-
-    document.getElementById('progressTrack').addEventListener('click', e => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      progressPct = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-      updateProgress();
-    });
   </script>
 </body>
 </html>
