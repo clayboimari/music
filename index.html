@@ -673,13 +673,16 @@
     }
   }
 
+  let trackCache = [];
+
   function renderResults(tracks) {
     if (!tracks.length) { showEmptySearch('No results'); return; }
-    const html = tracks.map(t => {
+    trackCache = tracks;
+    const html = tracks.map((t, i) => {
       const art = t.album?.images?.[1]?.url || t.album?.images?.[0]?.url || '';
       const artist = t.artists.map(a => a.name).join(', ');
       const dur = fmt(t.duration_ms / 1000);
-      return `<div class="result-item" onclick="playTrack('${t.uri}', ${JSON.stringify(t).replace(/'/g, '&#39;')})">
+      return `<div class="result-item" onclick="playFromCache(${i})">
         ${art
           ? `<img class="result-art" src="${art}" loading="lazy" />`
           : `<div class="result-art-fallback"><i class="ti ti-music"></i></div>`}
@@ -691,6 +694,11 @@
       </div>`;
     }).join('');
     document.getElementById('searchResults').innerHTML = html;
+  }
+
+  function playFromCache(i) {
+    const t = trackCache[i];
+    if (t) playTrack(t.uri, t);
   }
 
   // ── VIEWS ──
