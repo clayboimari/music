@@ -270,27 +270,38 @@ async function spotifyLogin() {
   window.location.href = 'https://accounts.spotify.com/authorize?' + params;
 }
 
+let exchangeInProgress = false;
+
 async function exchangeCode(code) {
-  const verifier = sessionStorage.getItem('pkce_verifier');
-  const res = await fetch('https://accounts.spotify.com/api/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  if (exchangeInProgress) { console.log("exchange already in progress, skipping"); return; }
+  exchangeInProgress = true;
+  const verifier = sessionStorage.getItem("pkce_verifier");
+  console.log("exchangeCode: code=" + (code ? code.slice(0,10)+"..." : "MISSING"));
+  console.log("exchangeCode: verifier=" + (verifier ? verifier.slice(0,10)+"..." : "MISSING"));
+  sessionStorage.removeItem("pkce_verifier");
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: CLIENT_ID,
-      grant_type: 'authorization_code',
+      grant_type: "authorization_code",
       code,
       redirect_uri: REDIRECT_URI,
       code_verifier: verifier,
     })
   });
   const data = await res.json();
+  console.log("exchangeCode response:", JSON.stringify(data).slice(0, 200));
   if (data.access_token) {
     accessToken = data.access_token;
-    localStorage.setItem('spotify_token', data.access_token);
-    localStorage.setItem('spotify_refresh', data.refresh_token);
-    localStorage.setItem('spotify_expiry', Date.now() + data.expires_in * 1000);
-    window.history.replaceState({}, '', REDIRECT_URI);
+    localStorage.setItem("spotify_token", data.access_token);
+    localStorage.setItem("spotify_refresh", data.refresh_token);
+    localStorage.setItem("spotify_expiry", Date.now() + data.expires_in * 1000);
+    window.history.replaceState({}, "", REDIRECT_URI);
     initApp();
+  } else {
+    console.error("Token exchange failed:", data);
+    exchangeInProgress = false;
   }
 }
 
