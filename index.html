@@ -373,16 +373,33 @@ function initApp() {
 }
 
 // ── PLAYBACK ──
+// Wait up to ~12s for the Web Playback SDK device to come online before giving up.
+function waitForDevice(timeoutMs = 12000) {
+  return new Promise(resolve => {
+    if (deviceId) return resolve(true);
+    const start = Date.now();
+    const iv = setInterval(() => {
+      if (deviceId) { clearInterval(iv); resolve(true); }
+      else if (Date.now() - start > timeoutMs) { clearInterval(iv); resolve(false); }
+    }, 200);
+  });
+}
+
 async function playTrack(uri, track) {
   const token = await getToken();
-  if (!deviceId) { showToast('Player not ready yet'); return; }
+  // Update the UI immediately so the tap feels responsive, then connect.
+  updateTrackUI(track);
+  showView('player');
+  if (!deviceId) {
+    showToast('Connecting…');
+    const ready = await waitForDevice();
+    if (!ready) { showToast('Player not ready — try again'); return; }
+  }
   await fetch('https://api.spotify.com/v1/me/player/play?device_id=' + deviceId, {
     method: 'PUT',
     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
     body: JSON.stringify({ uris: [uri] })
   });
-  updateTrackUI(track);
-  showView('player');
 }
 
 function updateTrackUI(track) {
@@ -497,7 +514,8 @@ async function doSearch(q) {
   showEmptySearch('Searching\u2026');
   try {
     const res = await fetch(
-      'https://api.spotify.com/v1/search?q=' + encodeURIComponent(q) + '&type=track&limit=20',
+      // Spotify caps search limit at 10 for apps in development mode (limit>=11 → 400 "Invalid limit")
+      'https://api.spotify.com/v1/search?q=' + encodeURIComponent(q) + '&type=track&limit=10',
       { headers: { 'Authorization': 'Bearer ' + token } }
     );
     const data = await res.json();
