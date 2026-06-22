@@ -258,7 +258,10 @@ async function generateChallenge(verifier) {
 async function spotifyLogin() {
   const verifier = generateVerifier();
   const challenge = await generateChallenge(verifier);
-  sessionStorage.setItem('pkce_verifier', verifier);
+  // localStorage (not sessionStorage) so the verifier survives the OAuth
+  // redirect even when an installed PWA hands the flow to a separate browser
+  // context. sessionStorage is per-tab/context and gets lost on the way back.
+  localStorage.setItem('pkce_verifier', verifier);
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     response_type: 'code',
@@ -275,10 +278,18 @@ let exchangeInProgress = false;
 async function exchangeCode(code) {
   if (exchangeInProgress) { console.log("exchange already in progress, skipping"); return; }
   exchangeInProgress = true;
-  const verifier = sessionStorage.getItem("pkce_verifier");
+  const verifier = localStorage.getItem("pkce_verifier");
   console.log("exchangeCode: code=" + (code ? code.slice(0,10)+"..." : "MISSING"));
   console.log("exchangeCode: verifier=" + (verifier ? verifier.slice(0,10)+"..." : "MISSING"));
-  sessionStorage.removeItem("pkce_verifier");
+  // If the verifier is gone, exchanging would consume the single-use code and
+  // fail with invalid_grant. Bail cleanly and let the user retry login instead.
+  if (!verifier) {
+    console.error("Missing PKCE verifier — aborting exchange so the code isn't burned.");
+    showToast("Login failed — tap Connect again");
+    exchangeInProgress = false;
+    return;
+  }
+  localStorage.removeItem("pkce_verifier");
   const res = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -565,7 +576,17 @@ function logout() {
 async function boot() {
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
+  const authError = params.get('error');
+  if (authError) {
+    // User denied, or Spotify returned an error. Clean the URL and stop.
+    window.history.replaceState({}, '', REDIRECT_URI);
+    showToast('Spotify login cancelled');
+    return;
+  }
   if (code) {
+    // Strip the code from the URL *before* the async exchange so a reload
+    // (PWA relaunch, SW refresh) can't replay this single-use code → invalid_grant.
+    window.history.replaceState({}, '', REDIRECT_URI);
     await exchangeCode(code);
     return;
   }
