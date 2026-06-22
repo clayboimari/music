@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Music — Genius test</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; -webkit-tap-highlight-color: transparent; }
+    .wrap { max-width: 480px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; padding: 24px 20px calc(env(safe-area-inset-bottom,0px) + 24px); }
+    h1 { font-size: 13px; font-weight: 600; color: #bbb; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+    .search-box { display: flex; align-items: center; gap: 10px; background: #f5f5f5; border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; }
+    .search-box input { flex: 1; border: none; background: transparent; font-size: 16px; outline: none; font-family: inherit; color: #111; }
+    .search-box input::placeholder { color: #bbb; }
+    .status { font-size: 12px; color: #bbb; padding: 8px 4px; min-height: 28px; }
+    .crumb { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #888; cursor: pointer; padding: 6px 0 10px; }
+    .crumb:active { opacity: .6; }
+    .row { display: flex; align-items: center; gap: 14px; padding: 10px 4px; border-bottom: .5px solid #f0f0f0; cursor: pointer; transition: opacity .15s; }
+    .row:active { opacity: .55; }
+    .avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: #eee; flex-shrink: 0; }
+    .avatar.sq { border-radius: 8px; }
+    .meta { flex: 1; min-width: 0; }
+    .name { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sub { font-size: 12px; color: #999; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chev { color: #ddd; font-size: 20px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Music · Genius test</h1>
+    <div class="search-box">
+      <input id="q" type="search" placeholder="Search an artist…" autocomplete="off" autofocus />
+    </div>
+    <div id="crumb"></div>
+    <div class="status" id="status">Type an artist name to search Genius.</div>
+    <div id="list"></div>
+  </div>
+
+<script>
+// Read-only public Genius token (safe to expose for personal use; regenerate anytime at genius.com/api-clients)
+const TOKEN = 'EBtpFutPoA3d_zVGD3BvEn16UqabHu4UgjfNkw_jfXiXa2RuKAPwQMtGIyPC1sVF';
+
+// Genius blocks direct browser calls (CORS), so we route through a public proxy.
+async function genius(path) {
+  const target = 'https://api.genius.com' + path + (path.includes('?') ? '&' : '?') + 'access_token=' + TOKEN;
+  const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(target));
+  const wrap = await r.json();
+  return JSON.parse(wrap.contents);
+}
+
+const $q = document.getElementById('q');
+const $status = document.getElementById('status');
+const $list = document.getElementById('list');
+const $crumb = document.getElementById('crumb');
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── ARTIST SEARCH ──
+let timer = null, reqId = 0;
+$q.addEventListener('input', () => {
+  const q = $q.value.trim();
+  $crumb.innerHTML = '';
+  clearTimeout(timer);
+  if (!q) { $list.innerHTML = ''; $status.textContent = 'Type an artist name to search Genius.'; return; }
+  timer = setTimeout(() => searchArtists(q), 350);
+});
+
+async function searchArtists(q) {
+  const my = ++reqId;
+  $status.textContent = 'Searching…';
+  try {
+    const data = await genius('/search?q=' + encodeURIComponent(q));
+    if (my !== reqId) return; // a newer search superseded this one
+    const hits = (data.response && data.response.hits) || [];
+    const seen = new Set(), artists = [];
+    for (const h of hits) {
+      const a = h.result.primary_artist;
+      if (a && !seen.has(a.id)) { seen.add(a.id); artists.push(a); }
+    }
+    renderArtists(artists);
+  } catch (e) {
+    if (my === reqId) $status.textContent = 'Something went wrong: ' + e.message;
+  }
+}
+
+function renderArtists(artists) {
+  if (!artists.length) { $status.textContent = 'No artists found.'; $list.innerHTML = ''; return; }
+  $status.textContent = artists.length + ' artist' + (artists.length>1?'s':'');
+  $list.innerHTML = artists.map(a =>
+    '<div class="row" onclick="openArtist(' + a.id + ', \'' + esc(a.name).replace(/'/g,"\\'") + '\')">' +
+      '<img class="avatar" src="' + esc(a.image_url || '') + '" onerror="this.style.visibility=\'hidden\'" />' +
+      '<div class="meta"><div class="name">' + esc(a.name) + '</div><div class="sub">Genius artist</div></div>' +
+      '<div class="chev">›</div>' +
+    '</div>'
+  ).join('');
+}
+
+// ── ARTIST → SONGS (rough discography) ──
+async function openArtist(id, name) {
+  $q.blur();
+  $crumb.innerHTML = '<div class="crumb" onclick="backToSearch()">‹ Back to search</div>';
+  $status.textContent = 'Loading ' + name + '…';
+  $list.innerHTML = '';
+  try {
+    const data = await genius('/artists/' + id + '/songs?sort=popularity&per_page=30');
+    const songs = (data.response && data.response.songs) || [];
+    if (!songs.length) { $status.textContent = 'No songs found for ' + name + '.'; return; }
+    $status.textContent = name + ' · ' + songs.length + ' songs (by popularity)';
+    $list.innerHTML = songs.map(s =>
+      '<div class="row">' +
+        '<img class="avatar sq" src="' + esc(s.song_art_image_thumbnail_url || '') + '" onerror="this.style.visibility=\'hidden\'" />' +
+        '<div class="meta"><div class="name">' + esc(s.title) + '</div><div class="sub">' + esc(s.primary_artist ? s.primary_artist.name : name) + '</div></div>' +
+      '</div>'
+    ).join('');
+  } catch (e) {
+    $status.textContent = 'Something went wrong: ' + e.message;
+  }
+}
+
+function backToSearch() {
+  $crumb.innerHTML = '';
+  if ($q.value.trim()) searchArtists($q.value.trim());
+  else { $list.innerHTML = ''; $status.textContent = 'Type an artist name to search Genius.'; }
+}
+</script>
+</body>
+</html>
